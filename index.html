@@ -66,10 +66,16 @@ $("chips").onclick=e=>{const k=e.target.dataset.k;if(!k)return;f=k;
 $("q").oninput=render;
 fetch("Food%20List.tsv").then(r=>r.text()).then(t=>{
   const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
-  rows=t.trim().split(/\r?\n/).slice(1).map(l=>{
-    const [en,zh,cat,place,note="",sub=""]=l.split("\t").map(s=>esc(s.trim()));
-    const subs=sub?sub.split(" | ").map(x=>{const i=x.indexOf("：");return i<0?{t:x,d:""}:{t:x.slice(0,i),d:x.slice(i+1)};}):[];
-    return {en,zh,cat,place,note,subs,region:region(place),all:(en+zh+cat+place+note+sub).toLowerCase()};
+  const all=t.trim().split(/\r?\n/).slice(1).map(l=>{
+    const [en,zh,cat,place,note="",parent=""]=l.split("\t").map(s=>esc((s||"").trim()));
+    return {en,zh,cat,place,note,parent,subs:[],region:region(place),all:(en+zh+cat+place+note).toLowerCase()};
+  }).filter(r=>r.en);
+  rows=all.filter(r=>!r.parent);
+  all.filter(r=>r.parent).forEach(c=>{
+    const p=rows.find(r=>r.en===c.parent);
+    if(!p)return;
+    p.subs.push({t:c.en+(c.zh?"（"+c.zh+"）":""),d:c.note});
+    p.all+=" "+c.all;
   });
   render();
 }).catch(()=>{$("count").textContent="Failed to load data"});
