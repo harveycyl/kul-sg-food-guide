@@ -28,6 +28,12 @@ main{padding:12px 14px 40px;display:grid;gap:12px}
 .tags{margin:8px 0;display:flex;gap:6px;flex-wrap:wrap}
 .tag{font-size:12px;padding:3px 9px;border-radius:999px;background:#2d2621;color:var(--mute)}
 .note{font-size:15px;line-height:1.55;color:#d8cdc3}
+details{margin-top:10px;background:#272019;border-radius:12px;padding:10px 12px}
+summary{cursor:pointer;font-weight:600;color:var(--accent);font-size:15px}
+.sub{margin-top:10px;padding-top:10px;border-top:1px solid #3a322d}
+.sub:first-of-type{border-top:0}
+.st{font-weight:700;font-size:15px}
+.sd{font-size:14px;line-height:1.55;color:#cfc3b8;margin-top:2px}
 </style>
 </head>
 <body>
@@ -52,7 +58,7 @@ function render(){
   $("list").innerHTML=out.map(r=>`<article class="card ${r.region}">
     <div class="en">${r.en}</div><div class="zh">${r.zh}</div>
     <div class="tags"><span class="tag">${r.cat}</span><span class="tag">📍 ${r.place}</span></div>
-    <div class="note">${r.note}</div></article>`).join("");
+    <div class="note">${r.note}</div>${r.subs.length?`<details><summary>菜式明細 · ${r.subs.length} items</summary>${r.subs.map(s=>`<div class="sub"><div class="st">${s.t}</div><div class="sd">${s.d}</div></div>`).join("")}</details>`:""}</article>`).join("");
 }
 $("chips").innerHTML=FILTERS.map(([k,l])=>`<button class="chip${k==="all"?" on":""}" data-k="${k}">${l}</button>`).join("");
 $("chips").onclick=e=>{const k=e.target.dataset.k;if(!k)return;f=k;
@@ -61,8 +67,9 @@ $("q").oninput=render;
 fetch("Food%20List.tsv").then(r=>r.text()).then(t=>{
   const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
   rows=t.trim().split(/\r?\n/).slice(1).map(l=>{
-    const [en,zh,cat,place,note=""]=l.split("\t").map(s=>esc(s.trim()));
-    return {en,zh,cat,place,note,region:region(place),all:(en+zh+cat+place+note).toLowerCase()};
+    const [en,zh,cat,place,note="",sub=""]=l.split("\t").map(s=>esc(s.trim()));
+    const subs=sub?sub.split(" | ").map(x=>{const i=x.indexOf("：");return i<0?{t:x,d:""}:{t:x.slice(0,i),d:x.slice(i+1)};}):[];
+    return {en,zh,cat,place,note,subs,region:region(place),all:(en+zh+cat+place+note+sub).toLowerCase()};
   });
   render();
 }).catch(()=>{$("count").textContent="Failed to load data"});
